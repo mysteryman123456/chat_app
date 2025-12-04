@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../home_screen.dart';
+
 class ThirdScreen extends StatelessWidget {
   const ThirdScreen({super.key});
 
@@ -40,10 +42,10 @@ class ThirdScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50)),
                 ),
                 onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  // );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                  );
                 },
                 child: const Text(
                   "Get Started",
