@@ -30,7 +30,7 @@ class LoginScreen extends StatelessWidget {
              Row(
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
-                 Text("Already have an account?"),
+                 Text("Don't have an account?"),
                  TextButton(
                    onPressed: () {
                      Navigator.push(context, MaterialPageRoute(builder: (_) => SignupScreen()));
