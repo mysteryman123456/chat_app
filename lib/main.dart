@@ -1,3 +1,4 @@
+import 'package:chat_app/screens/on_boarding_screen/first_screen.dart';
 import 'package:flutter/material.dart';
 
 void main(){
@@ -9,6 +10,9 @@ class ChatApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return MaterialApp(
+      theme: ThemeData.dark(),
+      home: FirstScreen(),
+    );
   }
 }
