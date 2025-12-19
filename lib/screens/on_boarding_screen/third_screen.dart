@@ -1,6 +1,5 @@
+import 'package:chat_app/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
-
-import '../home_screen.dart';
 
 class ThirdScreen extends StatelessWidget {
   const ThirdScreen({super.key});
@@ -49,7 +48,7 @@ class ThirdScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (_) => const HomeScreen()),
+                        MaterialPageRoute(builder: (_) => const DashboardScreen()),
                         (route) => route.isCurrent,
                       );
                     },
