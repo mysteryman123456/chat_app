@@ -7,9 +7,7 @@ class ThirdScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.black,
-      ),
+      appBar: AppBar(),
       body: SingleChildScrollView(
         child: SizedBox(
           width: double.infinity,
