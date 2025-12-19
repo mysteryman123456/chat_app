@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'signup_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -8,34 +6,40 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Center(
+      backgroundColor: Colors.black, // dark theme
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Welcome",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              const Text(
+                "Welcome to Chat App",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => LoginScreen()),
-                  );
-                },
-                child: Text("Login"),
+              const SizedBox(height: 24),
+
+              const Text(
+                "Your chats will appear here",
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.white70,
+                ),
               ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SignupScreen()),
-                  );
-                },
-                child: Text("Signup"),
+              const SizedBox(height: 40),
+
+              Expanded(
+                child: Center(
+                  child: Icon(
+                    Icons.chat_bubble_outline,
+                    color: Colors.white30,
+                    size: 120,
+                  ),
+                ),
               ),
             ],
           ),
