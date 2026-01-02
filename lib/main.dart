@@ -1,8 +1,18 @@
-import 'package:chat_app/screens/on_boarding_screen/first_screen.dart';
+import 'package:chat_app/core/services/hive/hive_service.dart';
+import 'package:chat_app/features/onboarding/presentation/pages/first_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/adapters.dart';
 
-void main() {
-  runApp(const ChatApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await registerHiveAdapters();
+  runApp(
+    const ProviderScope(
+      child: ChatApp(),
+    ),
+  );
 }
 
 class ChatApp extends StatelessWidget {
@@ -15,9 +25,7 @@ class ChatApp extends StatelessWidget {
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-        ),
+        appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent),
         textTheme: ThemeData.dark().textTheme.apply(
           fontFamily: "Manrope",
           bodyColor: Colors.white,
