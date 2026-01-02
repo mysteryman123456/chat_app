@@ -1,23 +1,23 @@
 import 'package:chat_app/common/my_snack_bar.dart';
-import 'package:chat_app/features/auth/presentation/pages/signup_screen.dart';
+import 'package:chat_app/features/auth/presentation/pages/login_page.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:chat_app/features/auth/presentation/state/auth_state.dart';
-import 'package:chat_app/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends ConsumerStatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   final RegExp _emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
 
@@ -28,17 +28,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _signup() {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    ref.read(authNotifierProvider.notifier).login(email, password);
+    ref.read(authNotifierProvider.notifier).register(email, username, password);
   }
 
 
@@ -46,13 +48,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     // Listen to auth state changes
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        Navigator.pushAndRemoveUntil(
+      if (next.status == AuthStatus.register) {
+        showMySnackBar(
+          context: context,
+          message: "Signup successful",
+        );
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => const DashboardScreen(),
-          ),
-          (route) => false,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
         );
       } else if (next.status == AuthStatus.error) {
         showMySnackBar(
@@ -64,25 +67,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(),
-      body: Padding(
-        padding: const EdgeInsets.all(40),
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const Text(
-                  "Welcome Back!",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 30),
+                  "Create an account",
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  "Please enter your email and password to login",
-                  textAlign: TextAlign.center,
-                ),
+                const Text("Start your messaging journey with GinChat"),
                 const SizedBox(height: 40),
+
+                // USERNAME
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: "Username",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Username is required";
+                    }
+                    if (value.length < 3) {
+                      return "Username must be at least 3 characters";
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 20),
 
                 // EMAIL
                 TextFormField(
@@ -99,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       return "Email is required";
                     }
                     if (!_emailRegex.hasMatch(value)) {
-                      return "Enter a valid email address";
+                      return "Enter a valid email";
                     }
                     return null;
                   },
@@ -122,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       return "Password is required";
                     }
                     if (!_passwordRegex.hasMatch(value)) {
-                      return "Password must be 8+ chars with uppercase, lowercase & number";
+                      return "Min 8 chars, uppercase, lowercase & number";
                     }
                     return null;
                   },
@@ -130,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 30),
 
-                // LOGIN BUTTON
+                // SIGNUP BUTTON
                 Consumer(
                   builder: (context, ref, child) {
                     final authState = ref.watch(authNotifierProvider);
@@ -146,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
                         ),
-                        onPressed: isLoading ? null : _handleLogin,
+                        onPressed: isLoading ? null : _signup,
                         child: isLoading
                             ? const SizedBox(
                                 height: 20,
@@ -158,7 +178,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 ),
                               )
-                            : const Text("Sign In"),
+                            : const Text("Signup"),
                       ),
                     );
                   },
@@ -166,21 +186,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 const SizedBox(height: 10),
 
-                // SIGNUP
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account?"),
+                    const Text("Already have an account?"),
                     TextButton(
                       onPressed: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
+                            builder: (_) => const LoginScreen(),
                           ),
                         );
                       },
-                      child: const Text("Signup"),
+                      child: const Text("Login"),
                     ),
                   ],
                 ),
