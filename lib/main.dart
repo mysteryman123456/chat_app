@@ -1,19 +1,28 @@
 import 'package:chat_app/core/services/hive/hive_service.dart';
+import 'package:chat_app/core/services/storage/user_session_service.dart';
 import 'package:chat_app/features/onboarding/presentation/pages/first_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  await registerHiveAdapters();
+
+  await HiveService().init();
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   runApp(
-    const ProviderScope(
-      child: ChatApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      ],
+      child: const ChatApp(),
     ),
   );
 }
+
 
 class ChatApp extends StatelessWidget {
   const ChatApp({super.key});

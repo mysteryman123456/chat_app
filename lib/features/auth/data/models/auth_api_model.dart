@@ -3,34 +3,49 @@ import 'package:chat_app/features/auth/domain/entities/auth_entity.dart';
 
 class AuthApiModel {
   final String? userId;
-  final String email;
   final String username;
+  final String email;
   final String? password;
 
-  AuthApiModel({this.userId, required this.email, this.password, required this.username});
+  AuthApiModel({
+    this.userId,
+    required this.username,
+    required this.email,
+    this.password,
+  });
 
   Map<String, dynamic> toJson() {
-    return {"email": email, "password": password, "username": username};
+    final data = <String, dynamic>{};
+
+    if (username != null) data['username'] = username;
+    if (email != null) data['email'] = email;
+    if (password != null) {
+      data['password'] = password;
+    }
+    return data;
   }
 
   factory AuthApiModel.fromJson(Map<String, dynamic> json) {
     return AuthApiModel(
-      userId: json['userId'] as String,
-      email: json['email'] as String,
+      userId: json['_id']?.toString(),
       username: json['username'] as String,
-      password: json['passwordHash'] as String?,
+      email: json['email'] as String,
     );
   }
 
   AuthEntity toEntity() {
-    return AuthEntity(username: username, email :email, password: password);
+    return AuthEntity(
+      userId: userId,
+      username: username,
+      email: email,
+    );
   }
 
   factory AuthApiModel.fromEntity(AuthEntity entity) {
     return AuthApiModel(
+      username: entity.username,
       email: entity.email,
       password: entity.password,
-      username: entity.username,
     );
   }
 }

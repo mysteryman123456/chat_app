@@ -1,12 +1,10 @@
 import 'package:chat_app/core/error/failures.dart';
 import 'package:dartz/dartz.dart';
 
-// Info: For use case with parameter
-abstract interface class UseCaseWithParams<SuccessType, Params> {
-  Future<Either<Failure, SuccessType>> call(Params params);
+abstract interface class UsecaseWithParms<SucessType, Params> {
+  Future<Either<Failure, SucessType>> call(Params params);
 }
 
-// Info: For use case without parameter
-abstract interface class UseCaseWithoutParams<SuccessType> {
+abstract interface class UsecaseWithoutParms<SuccessType> {
   Future<Either<Failure, SuccessType>> call();
 }
