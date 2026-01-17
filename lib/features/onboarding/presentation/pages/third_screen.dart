@@ -1,4 +1,5 @@
 import 'package:chat_app/app/routes/app_route.dart';
+import 'package:chat_app/features/auth/presentation/pages/login_page.dart';
 import 'package:chat_app/features/auth/presentation/pages/signup_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -43,7 +44,7 @@ class ThirdScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                          AppRoutes.push(context, SignupScreen());
+                          AppRoutes.push(context, LoginScreen());
                     },
                     child: const Text(
                       "Get Started",
