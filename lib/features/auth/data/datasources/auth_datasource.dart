@@ -1,6 +1,7 @@
 
 
 import 'package:chat_app/features/auth/data/models/auth_api_model.dart';
+import 'dart:io';
 import 'package:chat_app/features/auth/data/models/auth_hive_model.dart';
 
 abstract interface class IAuthLocalDataSource {
@@ -18,6 +19,9 @@ abstract interface class IAuthLocalDataSource {
 abstract interface class IAuthRemoteDataSource {
   Future<AuthApiModel> register(AuthApiModel user);
   Future<AuthApiModel?> login(String email, String password);
-
-
+  Future<AuthApiModel> updateProfile(String userId, Map<String, dynamic> data);
+  Future<bool> updatePassword(String oldPassword, String newPassword, String confirmPassword);
+  Future<String> uploadProfileImage(File file);
+  Future<String> forgotPassword(String email);
+  Future<bool> resetPassword(String token, String otp, String password);
 }
