@@ -120,9 +120,13 @@ class AuthLocalDatasource implements IAuthLocalDataSource {
   }
 
   @override
-  Future<bool> logout() {
-    // TODO: implement logout
-    throw UnimplementedError();
+  Future<bool> logout() async {
+    try {
+      await _userSessionService.clearSession();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
 
