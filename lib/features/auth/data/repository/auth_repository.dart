@@ -1,5 +1,6 @@
 import 'package:chat_app/core/error/failures.dart';
 import 'package:chat_app/core/services/connectivity/network_info.dart';
+import 'package:chat_app/core/services/storage/user_session_service.dart';
 import 'package:chat_app/features/auth/data/datasources/auth_datasource.dart';
 import 'package:chat_app/features/auth/data/datasources/local/auth_local_datasource.dart';
 import 'package:chat_app/features/auth/data/datasources/remote/auth_remote_datasource.dart';
@@ -10,7 +11,8 @@ import 'package:chat_app/features/auth/domain/repository/auth_repository.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   final authLocalDatasource = ref.read(authLocalDatasourceProvider);
@@ -129,9 +131,18 @@ class AuthRepository implements IAuthRepository {
 
 
   @override
-  Future<Either<Failure, bool>> logout() {
-    // TODO: implement logout
-    throw UnimplementedError();
+  Future<Either<Failure, bool>> logout() async {
+    try {
+      // Typically, just clearing the local session is enough. Backends doing token blacklists might have a /logout endpoint.
+      final prefs = await SharedPreferences.getInstance();
+      final userSessionService = UserSessionService(prefs: prefs);
+      await userSessionService.clearSession();
+      // AuthLocalDataSource might also need clearing if using hive heavily
+      await _authLocalDataSource.logout();
+      return const Right(true);
+    } catch(e) {
+      return Left(LocalDataBaseFailure(message: 'Failed to logout: $e'));
+    }
   }
 
   @override
@@ -140,5 +151,106 @@ class AuthRepository implements IAuthRepository {
     throw UnimplementedError();
   }
 
+  @override
+  Future<Either<Failure, AuthEntity>> updateProfile(String userId, Map<String, dynamic> data) async {
+     if (await _networkInfo.isConnected) {
+        try {
+          final userModel = await _authRemoteDataSource.updateProfile(userId, data);
+          return Right(userModel.toEntity());
+        } on DioException catch (e) {
+          return Left(
+            ApiFailure(
+              statusCode: e.response?.statusCode,
+              message: e.response?.data['message'] ?? "Failed to update profile!",
+            ),
+          );
+        } catch (e) {
+             return Left(ApiFailure(message: e.toString()));
+        }
+     } else {
+        return const Left(ApiFailure(message: "No internet connection"));
+     }
+  }
 
+  @override
+  Future<Either<Failure, bool>> updatePassword(String oldPassword, String newPassword, String confirmPassword) async {
+      if (await _networkInfo.isConnected) {
+        try {
+          final success = await _authRemoteDataSource.updatePassword(oldPassword, newPassword, confirmPassword);
+          return Right(success);
+        } on DioException catch (e) {
+          return Left(
+            ApiFailure(
+              statusCode: e.response?.statusCode,
+              message: e.response?.data['message'] ?? "Failed to update password!",
+            ),
+          );
+        } catch (e) {
+             return Left(ApiFailure(message: e.toString()));
+        }
+     } else {
+        return const Left(ApiFailure(message: "No internet connection"));
+     }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadProfileImage(File file) async {
+      if (await _networkInfo.isConnected) {
+        try {
+          final url = await _authRemoteDataSource.uploadProfileImage(file);
+          return Right(url);
+        } on DioException catch (e) {
+          return Left(
+            ApiFailure(
+              statusCode: e.response?.statusCode,
+              message: e.response?.data['message'] ?? "Failed to upload image",
+            ),
+          );
+        } catch (e) {
+             return Left(ApiFailure(message: e.toString()));
+        }
+     } else {
+        return const Left(ApiFailure(message: "No internet connection"));
+     }
+  }
+
+  @override
+  Future<Either<Failure, String>> forgotPassword(String email) async {
+    if (await _networkInfo.isConnected) {
+      try {
+        final token = await _authRemoteDataSource.forgotPassword(email);
+        return Right(token);
+      } on DioException catch (e) {
+        return Left(ApiFailure(
+          statusCode: e.response?.statusCode,
+          message: e.response?.data['message'] ?? 'Failed to send reset email',
+        ));
+      } catch (e) {
+        return Left(ApiFailure(message: e.toString()));
+      }
+    } else {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> resetPassword(
+      String token, String otp, String password) async {
+    if (await _networkInfo.isConnected) {
+      try {
+        final success =
+            await _authRemoteDataSource.resetPassword(token, otp, password);
+        return Right(success);
+      } on DioException catch (e) {
+        return Left(ApiFailure(
+          statusCode: e.response?.statusCode,
+          message: e.response?.data['message'] ?? 'Failed to reset password',
+        ));
+      } catch (e) {
+        return Left(ApiFailure(message: e.toString()));
+      }
+    } else {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+  }
 }
