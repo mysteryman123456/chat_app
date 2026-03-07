@@ -1,5 +1,5 @@
 import 'package:chat_app/features/home/presentation/pages/home_page.dart';
-import 'package:chat_app/features/notification/presentation/pages/notification_page.dart';
+import 'package:chat_app/features/search/presentation/pages/search_page.dart';
 import 'package:chat_app/features/setting/presentation/pages/setting_page.dart';
 import 'package:flutter/material.dart';
 
@@ -13,9 +13,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    HomeScreen(),
-    NotificationScreen(),
-    SettingScreen(),
+    const HomeScreen(),
+    const SearchScreen(),
+    const SettingScreen(),
   ];
 
   @override
@@ -39,8 +39,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Chats',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: 'Notifications',
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),
