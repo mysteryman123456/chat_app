@@ -6,12 +6,14 @@ class AuthApiModel {
   final String username;
   final String email;
   final String? password;
+  final String? profilePicture;
 
   AuthApiModel({
     this.userId,
     required this.username,
     required this.email,
     this.password,
+    this.profilePicture,
   });
 
   Map<String, dynamic> toJson() {
@@ -22,6 +24,9 @@ class AuthApiModel {
     if (password != null) {
       data['password'] = password;
     }
+    if (profilePicture != null) {
+      data['profile_image'] = profilePicture;
+    }
     return data;
   }
 
@@ -30,6 +35,7 @@ class AuthApiModel {
       userId: json['_id']?.toString(),
       username: json['username'] as String,
       email: json['email'] as String,
+      profilePicture: json['profile_image'] as String?,
     );
   }
 
@@ -38,6 +44,7 @@ class AuthApiModel {
       userId: userId,
       username: username,
       email: email,
+      profilePicture: profilePicture,
     );
   }
 
@@ -46,6 +53,7 @@ class AuthApiModel {
       username: entity.username,
       email: entity.email,
       password: entity.password,
+      profilePicture: entity.profilePicture,
     );
   }
 }
