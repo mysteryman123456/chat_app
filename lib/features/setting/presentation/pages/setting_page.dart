@@ -4,6 +4,8 @@ import 'package:chat_app/features/onboarding/presentation/pages/first_screen.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 
 class SettingScreen extends ConsumerWidget {
@@ -122,6 +124,11 @@ class SettingScreen extends ConsumerWidget {
                           title: "Update Password",
                           onTap: () => _showUpdatePasswordDialog(context, ref),
                         ),
+                        _buildSettingsTile(
+                          icon: Icons.location_on_outlined,
+                          title: "Copy Current Location",
+                          onTap: () => _copyLocation(context),
+                        ),
 
                         const Spacer(),
 
@@ -169,6 +176,45 @@ class SettingScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _copyLocation(BuildContext context) async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied')));
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are permanently denied')));
+      return;
+    } 
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fetching location...')));
+
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.low);
+    final String locationText = 'Lat: ${position.latitude}, Lng: ${position.longitude}';
+    
+    await Clipboard.setData(ClipboardData(text: locationText));
+    
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Location copied: $locationText')));
   }
 
   Widget _buildSettingsTile({required IconData icon, required String title, required VoidCallback onTap}) {

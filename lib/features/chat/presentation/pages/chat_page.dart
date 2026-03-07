@@ -11,6 +11,10 @@ import 'package:uuid/uuid.dart';
 import 'package:chat_app/features/chat/presentation/pages/audio_call_page.dart';
 import 'package:chat_app/core/services/webrtc/webrtc_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final ConversationEntity conversation;
@@ -27,10 +31,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   late String _myUserId;
   SocketService? _socketService; 
 
+  StreamSubscription<UserAccelerometerEvent>? _shakeSubscription;
+  DateTime? _lastShakeTime;
+
   @override
   void initState() {
     super.initState();
-    // Get real user ID from session
     _myUserId = ref.read(userSessionServiceProvider).getCurrentUserId() ?? '';
 
     Future.microtask(() {
@@ -43,9 +49,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
       _socketService!.onMessageReceived((data) {
         if (!mounted) return;
-        // The receive_message payload mirrors the send_message payload:
-        // { conversation_id, sender_id, type, content, receiver_info }
-        // It may not have _id or createdAt — we generate them locally
         final rawDate = data['created_at'] ?? data['createdAt'];
         final message = MessageEntity(
           id: data['_id'] ?? const Uuid().v4(),
@@ -61,6 +64,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             .read(conversationViewModelProvider.notifier)
             .addLocalMessage(message);
         _scrollToBottom();
+      });
+
+      _shakeSubscription = userAccelerometerEventStream().listen((UserAccelerometerEvent event) {
+        if (!mounted) return;
+        final double threshold = 15.0;
+        if (event.x.abs() > threshold || event.y.abs() > threshold || event.z.abs() > threshold) {
+          final now = DateTime.now();
+          if (_lastShakeTime == null || now.difference(_lastShakeTime!) > const Duration(seconds: 3)) {
+            _lastShakeTime = now;
+            _startCall();
+          }
+        }
       });
 
       _socketService!.onIncomingCall((data) {
@@ -85,9 +100,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
               TextButton(
                 onPressed: () async {
-                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); 
 
-                  // Request permissions first
+                  // requerts for permission
                   final status = await Permission.microphone.request();
                   if (status.isGranted) {
                     if (mounted) {
@@ -120,9 +135,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
 
+    _shakeSubscription?.cancel();
+
     _socketService?.removeWebRtcListeners();
     _socketService?.leaveAndDisconnect(widget.conversation.id);
     super.dispose();
+  }
+
+  Future<void> _startCall() async {
+    final status = await Permission.microphone.request();
+    if (status.isGranted) {
+      if (!mounted) return;
+      final myName = ref.read(userSessionServiceProvider).getCurrentUserFullName() ?? 'User';
+      
+      ref.read(webrtcServiceProvider).initiateCall(
+        widget.conversation.id,
+        _myUserId,
+        myName,
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AudioCallPage(
+            conversationId: widget.conversation.id,
+            callerName: widget.conversation.displayName, 
+            isIncoming: false,
+          ),
+        ),
+      );
+    }
   }
 
   void _scrollToBottom() {
@@ -194,34 +236,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.call, color: Colors.white),
-            onPressed: () async {
-              final status = await Permission.microphone.request();
-              if (status.isGranted) {
-                if (!mounted) return;
-                final myName = ref.read(userSessionServiceProvider).getCurrentUserFullName() ?? 'User';
-                
-                ref.read(webrtcServiceProvider).initiateCall(
-                  widget.conversation.id,
-                  _myUserId,
-                  myName,
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AudioCallPage(
-                      conversationId: widget.conversation.id,
-                      callerName: title, 
-                      isIncoming: false,
-                    ),
-                  ),
-                );
-              } else {
-                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Microphone permission required constraints')),
-                );
-              }
-            },
+            onPressed: _startCall,
           ),
           const SizedBox(width: 8),
         ],
