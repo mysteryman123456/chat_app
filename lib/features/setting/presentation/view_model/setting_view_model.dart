@@ -25,7 +25,20 @@ class SettingViewModel extends Notifier<SettingState> {
     _logoutUseCase = LogoutUseCase(repository: authRepository);
     _uploadProfileImageUseCase = UploadProfileImageUseCase(repository: authRepository);
     _userSessionService = ref.read(userSessionServiceProvider);
-    return const SettingState();
+    
+    return SettingState(
+      username: _userSessionService.getCurrentUsername() ?? 'User',
+      email: _userSessionService.getCurrentUserEmail() ?? '',
+      profileImage: _userSessionService.getCurrentUserProfilePicture(),
+    );
+  }
+
+  void refreshUserInfo() {
+    state = state.copyWith(
+      username: _userSessionService.getCurrentUsername() ?? 'User',
+      email: _userSessionService.getCurrentUserEmail() ?? '',
+      profileImage: _userSessionService.getCurrentUserProfilePicture(),
+    );
   }
 
   Future<bool> updateProfile(String username, {File? profileImage}) async {
@@ -43,7 +56,7 @@ class SettingViewModel extends Notifier<SettingState> {
           profileImageUrl = url;
         },
       );
-      if (profileImageUrl == null) return false;
+      if (profileImageUrl == null && profileImage != null && state.status == SettingStatus.error) return false;
     }
     
     final payload = <String, dynamic>{
@@ -61,6 +74,8 @@ class SettingViewModel extends Notifier<SettingState> {
         return false;
       },
       (success) {
+        // Now that the session is updated in RemoteDataSource, refresh our state info
+        refreshUserInfo();
         state = state.copyWith(status: SettingStatus.success, error: null);
         return true;
       },
@@ -78,7 +93,6 @@ class SettingViewModel extends Notifier<SettingState> {
         return false;
       },
       (success) async {
-        // Logout immediately after password change
         await logout();
         return true;
       },

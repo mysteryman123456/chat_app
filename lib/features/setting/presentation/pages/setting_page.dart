@@ -34,6 +34,7 @@ class SettingScreen extends ConsumerWidget {
     final state = ref.watch(settingViewModelProvider);
 
     return Scaffold(
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -48,36 +49,62 @@ class SettingScreen extends ConsumerWidget {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
+              
+              // Profile Header - Simple, no gradients
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFF2C2C2C),
+                      backgroundImage: state.profileImage != null && state.profileImage!.isNotEmpty
+                          ? NetworkImage(state.profileImage!)
+                          : null,
+                      child: (state.profileImage == null || state.profileImage!.isEmpty)
+                          ? Text(
+                              state.username.isNotEmpty ? state.username[0].toUpperCase() : 'U',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.username,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      state.email,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 40),
 
-              ListTile(
-                leading: const Icon(Icons.person, color: Colors.white),
-                title: const Text(
-                  "Update Profile",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                ),
-                onTap: () {
-                  _showUpdateProfileDialog(context, ref);
-                },
+              _buildSettingsTile(
+                icon: Icons.person_outline,
+                title: "Update Profile",
+                onTap: () => _showUpdateProfileDialog(context, ref, state.username, state.profileImage),
               ),
 
-              ListTile(
-                leading: const Icon(Icons.lock, color: Colors.white),
-                title: const Text(
-                  "Update Password",
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                ),
-                onTap: () {
-                  _showUpdatePasswordDialog(context, ref);
-                },
+              _buildSettingsTile(
+                icon: Icons.lock_outline,
+                title: "Update Password",
+                onTap: () => _showUpdatePasswordDialog(context, ref),
               ),
 
               const Spacer(),
@@ -87,18 +114,22 @@ class SettingScreen extends ConsumerWidget {
               else
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
+                  height: 55,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.logout, color: Colors.white),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
+                      backgroundColor: Colors.redAccent.withOpacity(0.1),
+                      surfaceTintColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Colors.redAccent, width: 1),
                       ),
                     ),
                     onPressed: () {
                       ref.read(settingViewModelProvider.notifier).logout();
                     },
-                    child: const Text(
+                    label: const Text(
                       'Logout',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
@@ -112,8 +143,31 @@ class SettingScreen extends ConsumerWidget {
     );
   }
 
-  void _showUpdateProfileDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
+  Widget _buildSettingsTile({required IconData icon, required String title, required VoidCallback onTap}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.white24,
+          size: 16,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _showUpdateProfileDialog(BuildContext context, WidgetRef ref, String currentUsername, String? currentProfileImage) {
+    final controller = TextEditingController(text: currentUsername);
     File? selectedImage;
 
     showDialog(
@@ -121,7 +175,8 @@ class SettingScreen extends ConsumerWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            backgroundColor: Colors.grey[900],
+            backgroundColor: const Color(0xFF1A1A1A),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: const Text('Update Profile', style: TextStyle(color: Colors.white)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -136,22 +191,48 @@ class SettingScreen extends ConsumerWidget {
                       });
                     }
                   },
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.grey[700],
-                    backgroundImage: selectedImage != null ? FileImage(selectedImage!) : null,
-                    child: selectedImage == null
-                        ? const Icon(Icons.camera_alt, color: Colors.white, size: 30)
-                        : null,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[800],
+                        backgroundImage: selectedImage != null 
+                            ? FileImage(selectedImage!) 
+                            : (currentProfileImage != null && currentProfileImage!.isNotEmpty 
+                                ? NetworkImage(currentProfileImage!) as ImageProvider
+                                : null),
+                        child: selectedImage == null && (currentProfileImage == null || currentProfileImage!.isEmpty)
+                            ? const Icon(Icons.person, color: Colors.white, size: 40)
+                            : null,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 TextField(
                   controller: controller,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    labelStyle: const TextStyle(color: Colors.white60),
                     hintText: 'New Username',
-                    hintStyle: TextStyle(color: Colors.grey),
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.white24),
+                    ),
                   ),
                 ),
               ],
@@ -159,9 +240,14 @@ class SettingScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel', style: TextStyle(color: Colors.redAccent)),
+                child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
               ),
-              TextButton(
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
                 onPressed: () {
                   if (controller.text.isNotEmpty) {
                     ref.read(settingViewModelProvider.notifier).updateProfile(
@@ -171,7 +257,7 @@ class SettingScreen extends ConsumerWidget {
                     Navigator.pop(context);
                   }
                 },
-                child: const Text('Save', style: TextStyle(color: Colors.blueAccent)),
+                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           );
@@ -188,48 +274,30 @@ class SettingScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Update Password', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: currentController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Current Password',
-                hintStyle: TextStyle(color: Colors.grey),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: newController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'New Password',
-                hintStyle: TextStyle(color: Colors.grey),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: confirmController,
-              obscureText: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Confirm Password',
-                hintStyle: TextStyle(color: Colors.grey),
-              ),
-            ),
+            _buildPasswordField(currentController, 'Current Password'),
+            const SizedBox(height: 12),
+            _buildPasswordField(newController, 'New Password'),
+            const SizedBox(height: 12),
+            _buildPasswordField(confirmController, 'Confirm Password'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () {
               if (currentController.text.isNotEmpty && newController.text.isNotEmpty && confirmController.text.isNotEmpty) {
                 ref.read(settingViewModelProvider.notifier).updatePassword(
@@ -240,9 +308,28 @@ class SettingScreen extends ConsumerWidget {
                 Navigator.pop(context);
               }
             },
-            child: const Text('Save', style: TextStyle(color: Colors.blueAccent)),
+            child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPasswordField(TextEditingController controller, String hint) {
+    return TextField(
+      controller: controller,
+      obscureText: true,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: hint,
+        labelStyle: const TextStyle(color: Colors.white60),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.white24),
+        ),
       ),
     );
   }

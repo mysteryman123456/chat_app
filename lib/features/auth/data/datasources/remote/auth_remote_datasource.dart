@@ -42,6 +42,8 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
       await _userSessionService.saveUserSession(
         userId: user.userId ?? data['_id'] ?? '',
         email: user.email,
+        username: user.username,
+        profilePicture: user.profilePicture,
       );
       
       await _userSessionService.saveToken(token);
@@ -82,6 +84,8 @@ class AuthRemoteDatasource implements IAuthRemoteDataSource {
       await _userSessionService.saveUserSession(
         userId: user.userId ?? updatedData['_id'] ?? userId,
         email: user.email,
+        username: user.username,
+        profilePicture: user.profilePicture,
       );
       
       return user;
