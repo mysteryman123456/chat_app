@@ -101,7 +101,7 @@ class AuthRepository implements IAuthRepository {
         return Left(
           ApiFailure(
             statusCode: e.response?.statusCode,
-            message: e.response?.data['message'] ?? "Failed to login user!",
+            message: e.response?.data['error'] ?? "Failed to login user!",
           ),
         );
       } catch (e) {
