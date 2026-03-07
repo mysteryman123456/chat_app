@@ -3,21 +3,41 @@ import 'package:chat_app/core/services/storage/user_session_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+
+class OnlineUsersNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => <String>{};
+
+  void setOnlineUsers(List<String> userIds) {
+    state = userIds.toSet();
+  }
+}
+
+final onlineUsersProvider =
+    NotifierProvider<OnlineUsersNotifier, Set<String>>(
+        OnlineUsersNotifier.new);
+
+
 final socketServiceProvider = Provider<SocketService>((ref) {
-  return SocketService(userSessionService: ref.read(userSessionServiceProvider));
+  return SocketService(
+    userSessionService: ref.read(userSessionServiceProvider),
+    ref: ref,
+  );
 });
 
 class SocketService {
   final UserSessionService _userSessionService;
+  final Ref _ref;
   IO.Socket? socket;
 
-  SocketService({required UserSessionService userSessionService})
-      : _userSessionService = userSessionService;
+  SocketService({
+    required UserSessionService userSessionService,
+    required Ref ref,
+  })  : _userSessionService = userSessionService,
+        _ref = ref;
 
   void connectAndJoin(String conversationId) async {
     final userId = _userSessionService.getCurrentUserId();
-    
-    // We assume backend base URL here (usually api is /api, socket is on root)
     final url = ApiEndpoints.baseUrl.replaceAll('/api', '');
 
     socket = IO.io(url, <String, dynamic>{
@@ -28,11 +48,18 @@ class SocketService {
     socket!.connect();
 
     socket!.onConnect((_) {
-      print('Socket Connected');
       if (userId != null) {
         socket!.emit('join_online', {'userId': userId});
       }
       socket!.emit('join_conversation', {'conversationId': conversationId});
+    });
+
+    // Track who is online — backend emits 'online_users' with list of userIds
+    socket!.on('online_users', (data) {
+      if (data is List) {
+        final ids = data.map((e) => e.toString()).toList();
+        _ref.read(onlineUsersProvider.notifier).setOnlineUsers(ids);
+      }
     });
   }
 
@@ -63,10 +90,20 @@ class SocketService {
     }
   }
 
+  void leaveAndDisconnect(String conversationId) {
+    if (socket != null) {
+      socket!.emit('leave_conversation', {'conversationId': conversationId});
+      socket!.disconnect();
+      socket!.dispose();
+      socket = null;
+    }
+  }
+
   void disconnect() {
     if (socket != null) {
       socket!.disconnect();
       socket!.dispose();
+      socket = null;
     }
   }
 }

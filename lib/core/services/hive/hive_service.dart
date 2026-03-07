@@ -33,7 +33,6 @@ class HiveService {
     await Hive.close();
   }
 
-  // ====================Authentication Queries=====================
   Box<AuthHiveModel> get _authBox =>
       Hive.box<AuthHiveModel>(HiveTableConstant.userTable);
 
