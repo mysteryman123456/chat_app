@@ -84,7 +84,7 @@ class _AudioCallPageState extends ConsumerState<AudioCallPage> {
               ),
             ),
             const SizedBox(height: 24),
-            // User Name
+
             Text(
               widget.callerName,
               style: const TextStyle(
@@ -94,7 +94,7 @@ class _AudioCallPageState extends ConsumerState<AudioCallPage> {
               ),
             ),
             const SizedBox(height: 8),
-            // Call Status
+
             Text(
               "Audio Calling...",
               style: TextStyle(
@@ -103,7 +103,7 @@ class _AudioCallPageState extends ConsumerState<AudioCallPage> {
               ),
             ),
             const Spacer(),
-            // Call Controls
+
             Container(
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 40),
               decoration: const BoxDecoration(
@@ -128,12 +128,6 @@ class _AudioCallPageState extends ConsumerState<AudioCallPage> {
                     isActive: true,
                     isDestructive: true,
                     onTap: _endCall,
-                  ),
-                  _buildControlButton(
-                    icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_down,
-                    label: "Speaker",
-                    isActive: _isSpeakerOn,
-                    onTap: _toggleSpeaker,
                   ),
                 ],
               ),
