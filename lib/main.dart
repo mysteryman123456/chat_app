@@ -1,6 +1,7 @@
 import 'package:chat_app/core/services/hive/hive_service.dart';
 import 'package:chat_app/core/services/storage/user_session_service.dart';
 import 'package:chat_app/features/onboarding/presentation/pages/first_screen.dart';
+import 'package:chat_app/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -24,11 +25,14 @@ void main() async {
 }
 
 
-class ChatApp extends StatelessWidget {
+class ChatApp extends ConsumerWidget {
   const ChatApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sessionService = ref.read(userSessionServiceProvider);
+    final isLoggedIn = sessionService.isLoggedIn();
+
     return MaterialApp(
       theme: ThemeData(fontFamily: "Manrope"),
       themeMode: ThemeMode.dark,
@@ -41,8 +45,8 @@ class ChatApp extends StatelessWidget {
           displayColor: Colors.white,
         ),
       ),
-
-      home: const FirstScreen(),
+      home: isLoggedIn ? const DashboardScreen() : const FirstScreen(),
     );
   }
 }
+
