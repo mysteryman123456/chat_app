@@ -1,5 +1,6 @@
 import 'package:chat_app/app/routes/app_route.dart';
 import 'package:chat_app/common/my_snack_bar.dart';
+import 'package:chat_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:chat_app/features/auth/presentation/pages/signup_screen.dart';
 import 'package:chat_app/features/auth/presentation/state/auth_state.dart';
 import 'package:chat_app/features/auth/presentation/view_model/auth_viewmodel.dart';
@@ -124,7 +125,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 8),
+
+                // FORGOT PASSWORD LINK
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: Colors.indigo),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
 
                 // LOGIN BUTTON
                 Consumer(
