@@ -8,6 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:chat_app/features/conversation/domain/entities/message_entity.dart';
 import 'package:uuid/uuid.dart';
+import 'package:chat_app/features/chat/presentation/pages/audio_call_page.dart';
+import 'package:chat_app/core/services/webrtc/webrtc_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final ConversationEntity conversation;
@@ -59,6 +62,56 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             .addLocalMessage(message);
         _scrollToBottom();
       });
+
+      _socketService!.onIncomingCall((data) {
+        if (!mounted) return;
+        final conversationId = data['conversationId'];
+        final callerName = data['callerName'] ?? 'Unknown Caller';
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            title: const Text("Incoming Call", style: TextStyle(color: Colors.white)),
+            content: Text("$callerName is calling you...", style: const TextStyle(color: Colors.white70)),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  ref.read(webrtcServiceProvider).rejectIncomingCall(conversationId);
+                  Navigator.pop(context);
+                },
+                child: const Text("Reject", style: TextStyle(color: Colors.redAccent)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context); // Close dialog
+
+                  // Request permissions first
+                  final status = await Permission.microphone.request();
+                  if (status.isGranted) {
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AudioCallPage(
+                            conversationId: conversationId,
+                            callerName: callerName,
+                            isIncoming: true,
+                          ),
+                        ),
+                      );
+                    }
+                  } else {
+                    ref.read(webrtcServiceProvider).rejectIncomingCall(conversationId);
+                  }
+                },
+                child: const Text("Accept", style: TextStyle(color: Colors.greenAccent)),
+              ),
+            ],
+          ),
+        );
+      });
     });
   }
 
@@ -66,7 +119,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    // Use cached reference — cannot call ref.read() inside dispose()
+
+    _socketService?.removeWebRtcListeners();
     _socketService?.leaveAndDisconnect(widget.conversation.id);
     super.dispose();
   }
@@ -87,7 +141,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // Find receiver: first participant that is not me
+
     final receiverId = widget.conversation.participants
         .firstWhere((id) => id != _myUserId, orElse: () => '');
 
@@ -100,7 +154,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       createdAt: DateTime.now(),
     );
 
-    // Emit to socket first
+
     ref.read(socketServiceProvider).sendMessage(
           conversationId: widget.conversation.id,
           senderId: _myUserId,
@@ -109,7 +163,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           type: 'TEXT',
         );
 
-    // Optimistically add to local state
+
     ref
         .read(conversationViewModelProvider.notifier)
         .addLocalMessage(localMessage);
@@ -122,16 +176,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final conversationState = ref.watch(conversationViewModelProvider);
 
-    // Sort messages oldest → newest so the ListView (reverse:true) shows
-    // newest at bottom naturally
     final messages = [...conversationState.messages]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    // Derive a display name for the AppBar
-    final otherParticipant = widget.conversation.participants
-        .firstWhere((id) => id != _myUserId, orElse: () => '');
-    final title = widget.conversation.groupName ??  
-        (otherParticipant.isNotEmpty ? otherParticipant : 'Chat');
+    final title = widget.conversation.displayName;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D1A),
@@ -143,13 +191,47 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.call, color: Colors.white),
+            onPressed: () async {
+              final status = await Permission.microphone.request();
+              if (status.isGranted) {
+                if (!mounted) return;
+                final myName = ref.read(userSessionServiceProvider).getCurrentUserFullName() ?? 'User';
+                
+                ref.read(webrtcServiceProvider).initiateCall(
+                  widget.conversation.id,
+                  _myUserId,
+                  myName,
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AudioCallPage(
+                      conversationId: widget.conversation.id,
+                      callerName: title, 
+                      isIncoming: false,
+                    ),
+                  ),
+                );
+              } else {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Microphone permission required constraints')),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF6C5CE7),
               child: Text(
-                title.isNotEmpty ? title[0].toUpperCase() : '?',
+                widget.conversation.initial,
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -170,7 +252,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          // ── Messages List ──────────────────────────────────────────────
+
           Expanded(
             child: conversationState.status == ConversationStatus.loading &&
                     messages.isEmpty
@@ -198,7 +280,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ),
           ),
 
-          // ── Input Bar ─────────────────────────────────────────────────
           _buildMessageInput(),
         ],
       ),
