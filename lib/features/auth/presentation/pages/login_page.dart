@@ -1,7 +1,8 @@
+import 'package:chat_app/app/routes/app_route.dart';
 import 'package:chat_app/common/my_snack_bar.dart';
 import 'package:chat_app/features/auth/presentation/pages/signup_screen.dart';
-import 'package:chat_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:chat_app/features/auth/presentation/state/auth_state.dart';
+import 'package:chat_app/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:chat_app/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,33 +33,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (!_formKey.currentState!.validate()) return;
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
 
-    ref.read(authNotifierProvider.notifier).login(email, password);
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      await ref
+          .read(authViewModelProvider.notifier)
+          .loginUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    // Listen to auth state changes
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+    final authState = ref.watch(authViewModelProvider);
+    ref.listen<AuthState>(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DashboardScreen(),
-          ),
-          (route) => false,
-        );
-      } else if (next.status == AuthStatus.error) {
-        showMySnackBar(
-          context: context,
-          message: next.errorMessage ?? "An error occurred",
-        );
+        AppRoutes.pushReplacement(context, const DashboardScreen());
+      } else if (next.status == AuthStatus.error && next.error != null) {
+        showMySnackBar(context: context, message: next?.error ?? "Invalid email or password",color: Colors.red);
       }
     });
 
@@ -133,7 +129,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // LOGIN BUTTON
                 Consumer(
                   builder: (context, ref, child) {
-                    final authState = ref.watch(authNotifierProvider);
                     final isLoading = authState.status == AuthStatus.loading;
 
                     return SizedBox(

@@ -1,7 +1,8 @@
+import 'package:chat_app/app/routes/app_route.dart';
 import 'package:chat_app/common/my_snack_bar.dart';
 import 'package:chat_app/features/auth/presentation/pages/login_page.dart';
-import 'package:chat_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:chat_app/features/auth/presentation/state/auth_state.dart';
+import 'package:chat_app/features/auth/presentation/view_model/auth_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,37 +34,34 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-  void _signup() {
+  Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
-
-    final email = _emailController.text.trim();
-    final username = _usernameController.text.trim();
-    final password = _passwordController.text.trim();
-
-    ref.read(authNotifierProvider.notifier).register(email, username, password);
+    if (_formKey.currentState!.validate()) {
+      await ref
+          .read(authViewModelProvider.notifier)
+          .registerUser(
+        username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+    }
   }
 
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authViewModelProvider);
+
     // Listen to auth state changes
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.status == AuthStatus.register) {
-        showMySnackBar(
-          context: context,
-          message: "Signup successful",
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
-      } else if (next.status == AuthStatus.error) {
-        showMySnackBar(
-          context: context,
-          message: next.errorMessage ?? "An error occurred",
-        );
+    ref.listen<AuthState>(authViewModelProvider, (previous, next) {
+      if (next.status == AuthStatus.registered) {
+        showMySnackBar(context: context, message: "Registration successful",color:Colors.green);
+        AppRoutes.push(context, LoginScreen());
+      } else if (next.status == AuthStatus.error && next.error != null) {
+        showMySnackBar(context: context, message: next?.error ?? "Failed to register user",color: Colors.red);
       }
     });
+
 
     return Scaffold(
       appBar: AppBar(),
@@ -153,7 +151,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 // SIGNUP BUTTON
                 Consumer(
                   builder: (context, ref, child) {
-                    final authState = ref.watch(authNotifierProvider);
                     final isLoading = authState.status == AuthStatus.loading;
 
                     return SizedBox(

@@ -1,5 +1,3 @@
-import 'package:chat_app/core/services/hive/hive_storage.dart';
-
 import 'package:chat_app/features/auth/presentation/pages/login_page.dart';
 import 'package:flutter/material.dart';
 
@@ -65,27 +63,6 @@ class SettingScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
                 onTap: () {},
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.white),
-                title: const Text(
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                  "Logout",
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                ),
-                onTap: () async {
-                  await HiveStorage.clearUser();
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (route) => route.isCurrent,
-                    );
-                  }
-                },
               ),
             ],
           ),

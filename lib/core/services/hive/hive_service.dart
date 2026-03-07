@@ -1,18 +1,78 @@
+import 'package:chat_app/core/constants/hive_table_constant.dart';
 import 'package:chat_app/features/auth/data/models/auth_hive_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
-Future<void> registerHiveAdapters() async {
-  try {
-    Hive.registerAdapter(AuthHiveModelAdapter());
-    if (!Hive.isBoxOpen('auth_storage')) {
-      authStorage = await Hive.openBox<AuthHiveModel>('auth_storage');
-    } else {
-      authStorage = Hive.box<AuthHiveModel>('auth_storage');
+import 'package:path_provider/path_provider.dart';
+
+final hiveServiceProvider = Provider<HiveService>((ref) {
+  return HiveService();
+});
+
+class HiveService {
+  Future<void> init() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final path = '${directory.path}/${HiveTableConstant.dbName}';
+    Hive.init(path);
+
+    _registerAdapters();
+    await _openBoxes();
+  }
+
+  void _registerAdapters() {
+    if (!Hive.isAdapterRegistered(HiveTableConstant.userTypeId)) {
+      Hive.registerAdapter(AuthHiveModelAdapter());
     }
-  } catch (e) {
-    // ignore: avoid_print
-    print(e);
+  }
+
+  Future<void> _openBoxes() async {
+    await Hive.openBox<AuthHiveModel>(HiveTableConstant.userTable);
+  }
+
+  Future<void> close() async {
+    await Hive.close();
+  }
+
+  // ====================Authentication Queries=====================
+  Box<AuthHiveModel> get _authBox =>
+      Hive.box<AuthHiveModel>(HiveTableConstant.userTable);
+
+  Future<AuthHiveModel> registerUser(AuthHiveModel user) async {
+    await _authBox.put(user.userId, user);
+    return user;
+  }
+
+  AuthHiveModel? loginUser(String email, String password) {
+    try {
+      return _authBox.values.firstWhere(
+            (user) => user.email == email && user.password == password,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  AuthHiveModel? getUserById(String authId) {
+    return _authBox.get(authId);
+  }
+
+  AuthHiveModel? getUserByEmail(String email) {
+    try {
+      return _authBox.values.firstWhere((user) => user.email == email);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> updateUser(AuthHiveModel user) async {
+    if (_authBox.containsKey(user.userId)) {
+      await _authBox.put(user.userId, user);
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> deleteUser(String authId) async {
+    await _authBox.delete(authId);
   }
 }
-
-late Box<AuthHiveModel> authStorage;
