@@ -27,6 +27,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final conversationState = ref.watch(conversationViewModelProvider);
     final onlineUsers = ref.watch(onlineUsersProvider);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 600;
+    final horizontalPad = isWide ? screenWidth * 0.1 : 0.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D1A),
@@ -34,16 +37,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ────────────────────────────────────────────────────
+
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+              padding: EdgeInsets.fromLTRB(
+                20 + horizontalPad, 20, 20 + horizontalPad, 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Messages',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: isWide ? 32 : 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -61,7 +65,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // ── Conversation List ──────────────────────────────────────────
             Expanded(
               child: conversationState.status == ConversationStatus.loading &&
                       conversationState.conversations.isEmpty
@@ -97,109 +100,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           itemBuilder: (context, index) {
                             final conv = conversationState.conversations[index];
 
-                            // Who is the other person?
                             final name = conv.displayName;
                             final avatarLetter = conv.initial;
                             final imageUrl = conv.otherUserProfileImage;
-                            // Check online status using the other user's ID
                             final isOnline = conv.otherUserId != null &&
                                 onlineUsers.contains(conv.otherUserId);
 
-                            return InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        ChatScreen(conversation: conv),
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 8),
-                                child: Row(
-                                  children: [
-                                    // ── Avatar with online dot ─────────
-                                    Stack(
+                            return Center(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: isWide ? 700 : double.infinity,
+                                ),
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ChatScreen(conversation: conv),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: 16 + horizontalPad,
+                                        vertical: 8),
+                                    child: Row(
                                       children: [
-                                        // Profile image or initial
-                                        CircleAvatar(
-                                          radius: 28,
-                                          backgroundColor:
-                                              const Color(0xFF6C5CE7),
-                                          backgroundImage: imageUrl != null &&
-                                                  imageUrl.isNotEmpty
-                                              ? NetworkImage(imageUrl)
-                                              : null,
-                                          child: imageUrl == null ||
-                                                  imageUrl.isEmpty
-                                              ? Text(
-                                                  avatarLetter,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 18,
+                                        Stack(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: isWide ? 32 : 28,
+                                              backgroundColor:
+                                                  const Color(0xFF6C5CE7),
+                                              backgroundImage: imageUrl != null &&
+                                                      imageUrl.isNotEmpty
+                                                  ? NetworkImage(imageUrl)
+                                                  : null,
+                                              child: imageUrl == null ||
+                                                      imageUrl.isEmpty
+                                                  ? Text(
+                                                      avatarLetter,
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: isWide ? 20 : 18,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            if (isOnline)
+                                              Positioned(
+                                                right: 1,
+                                                bottom: 1,
+                                                child: Container(
+                                                  width: 13,
+                                                  height: 13,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.greenAccent,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: const Color(0xFF0D0D1A),
+                                                      width: 2,
+                                                    ),
                                                   ),
-                                                )
-                                              : null,
-                                        ),
-                                        // Online indicator dot
-                                        if (isOnline)
-                                          Positioned(
-                                            right: 1,
-                                            bottom: 1,
-                                            child: Container(
-                                              width: 13,
-                                              height: 13,
-                                              decoration: BoxDecoration(
-                                                color: Colors.greenAccent,
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color:
-                                                      const Color(0xFF0D0D1A),
-                                                  width: 2,
                                                 ),
                                               ),
-                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(width: 14),
+
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                name,
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: isWide ? 17 : 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Text(
+                                                isOnline ? 'Online' : 'Tap to chat',
+                                                style: TextStyle(
+                                                  color: isOnline
+                                                      ? Colors.greenAccent
+                                                      : Colors.white
+                                                          .withOpacity(0.4),
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                        ),
+
+                                        const Icon(Icons.chevron_right,
+                                            color: Colors.white24),
                                       ],
                                     ),
-                                    const SizedBox(width: 14),
-
-                                    // ── Text info ─────────────────────
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            name,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 3),
-                                          Text(
-                                            isOnline ? 'Online' : 'Tap to chat',
-                                            style: TextStyle(
-                                              color: isOnline
-                                                  ? Colors.greenAccent
-                                                  : Colors.white
-                                                      .withOpacity(0.4),
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // ── Arrow ─────────────────────────
-                                    const Icon(Icons.chevron_right,
-                                        color: Colors.white24),
-                                  ],
+                                  ),
                                 ),
                               ),
                             );
@@ -212,3 +215,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
+

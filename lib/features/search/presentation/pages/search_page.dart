@@ -30,7 +30,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Conversation created successfully')),
       );
-      // Here we might navigate to the required chat page later
     } else if (mounted) {
       final error = ref.read(conversationViewModelProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,76 +41,102 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(searchViewModelProvider);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 600;
+    final horizontalPad = isWide ? screenWidth * 0.1 : 16.0;
 
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text('Search Users', style: TextStyle(color: Colors.white)),
+        title: Text('Search Users',
+            style: TextStyle(
+                color: Colors.white, fontSize: isWide ? 22 : 18)),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search by username...',
-                hintStyle: const TextStyle(color: Colors.grey),
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey[900],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 700),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    horizontalPad, 16, horizontalPad, 8),
+                child: TextField(
+                  controller: _searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Search by username...',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: _onSearchChanged,
                 ),
               ),
-              onChanged: _onSearchChanged,
-            ),
+              Expanded(
+                child: searchState.status == SearchStatus.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : searchState.users.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No users found',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            itemCount: searchState.users.length,
+                            itemBuilder: (context, index) {
+                              final user = searchState.users[index];
+                              return Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: horizontalPad - 16),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    radius: isWide ? 26 : 22,
+                                    backgroundColor: Colors.blueAccent,
+                                    backgroundImage:
+                                        user.profileImage != null
+                                            ? NetworkImage(
+                                                user.profileImage!)
+                                            : null,
+                                    child: user.profileImage == null
+                                        ? Text(
+                                            user.username[0].toUpperCase())
+                                        : null,
+                                  ),
+                                  title: Text(
+                                    user.username,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: isWide ? 16 : 14),
+                                  ),
+                                  subtitle: Text(
+                                    user.email,
+                                    style: const TextStyle(
+                                        color: Colors.grey),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.chat,
+                                        color: Colors.blue),
+                                    onPressed: () =>
+                                        _startConversation(user.id),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
           ),
-          Expanded(
-            child: searchState.status == SearchStatus.loading
-                ? const Center(child: CircularProgressIndicator())
-                : searchState.users.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No users found',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: searchState.users.length,
-                        itemBuilder: (context, index) {
-                          final user = searchState.users[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.blueAccent,
-                              backgroundImage: user.profileImage != null
-                                  ? NetworkImage(user.profileImage!)
-                                  : null,
-                              child: user.profileImage == null
-                                  ? Text(user.username[0].toUpperCase())
-                                  : null,
-                            ),
-                            title: Text(
-                              user.username,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              user.email,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.chat, color: Colors.blue),
-                              onPressed: () => _startConversation(user.id),
-                            ),
-                          );
-                        },
-                      ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
+

@@ -32,111 +32,139 @@ class SettingScreen extends ConsumerWidget {
     });
 
     final state = ref.watch(settingViewModelProvider);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 600;
+    final avatarRadius = isWide ? 65.0 : 50.0;
+    final horizontalPad = isWide ? screenWidth * 0.1 : 16.0;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Profile Header - Simple, no gradients
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: const Color(0xFF2C2C2C),
-                      backgroundImage: state.profileImage != null && state.profileImage!.isNotEmpty
-                          ? NetworkImage(state.profileImage!)
-                          : null,
-                      child: (state.profileImage == null || state.profileImage!.isEmpty)
-                          ? Text(
-                              state.username.isNotEmpty ? state.username[0].toUpperCase() : 'U',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 700),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPad, vertical: 16),
+              child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Settings",
+                          style: TextStyle(
+                            fontSize: isWide ? 34 : 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: isWide ? 40 : 32),
+
+
+                        Center(
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: avatarRadius,
+                                backgroundColor: const Color(0xFF2C2C2C),
+                                backgroundImage: state.profileImage != null &&
+                                        state.profileImage!.isNotEmpty
+                                    ? NetworkImage(state.profileImage!)
+                                    : null,
+                                child: (state.profileImage == null ||
+                                        state.profileImage!.isEmpty)
+                                    ? Text(
+                                        state.username.isNotEmpty
+                                            ? state.username[0].toUpperCase()
+                                            : 'U',
+                                        style: TextStyle(
+                                          fontSize: isWide ? 40 : 32,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : null,
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.username,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      state.email,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 40),
+                              const SizedBox(height: 16),
+                              Text(
+                                state.username,
+                                style: TextStyle(
+                                  fontSize: isWide ? 26 : 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                state.email,
+                                style: TextStyle(
+                                  fontSize: isWide ? 15 : 14,
+                                  color: Colors.white.withOpacity(0.6),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-              _buildSettingsTile(
-                icon: Icons.person_outline,
-                title: "Update Profile",
-                onTap: () => _showUpdateProfileDialog(context, ref, state.username, state.profileImage),
-              ),
+                        SizedBox(height: isWide ? 48 : 40),
 
-              _buildSettingsTile(
-                icon: Icons.lock_outline,
-                title: "Update Password",
-                onTap: () => _showUpdatePasswordDialog(context, ref),
-              ),
+                        _buildSettingsTile(
+                          icon: Icons.person_outline,
+                          title: "Update Profile",
+                          onTap: () => _showUpdateProfileDialog(
+                              context, ref, state.username, state.profileImage),
+                        ),
+                        _buildSettingsTile(
+                          icon: Icons.lock_outline,
+                          title: "Update Password",
+                          onTap: () => _showUpdatePasswordDialog(context, ref),
+                        ),
 
-              const Spacer(),
-              
-              if (state.status == SettingStatus.loading)
-                const Center(child: CircularProgressIndicator())
-              else
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent.withOpacity(0.1),
-                      surfaceTintColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: Colors.redAccent, width: 1),
-                      ),
-                    ),
-                    onPressed: () {
-                      ref.read(settingViewModelProvider.notifier).logout();
-                    },
-                    label: const Text(
-                      'Logout',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        const Spacer(),
+
+                        if (state.status == SettingStatus.loading)
+                          const Center(child: CircularProgressIndicator())
+                        else
+                          SizedBox(
+                            width: double.infinity,
+                            height: 55,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.logout, color: Colors.white),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Colors.redAccent.withOpacity(0.1),
+                                surfaceTintColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: const BorderSide(
+                                      color: Colors.redAccent, width: 1),
+                                ),
+                              ),
+                              onPressed: () {
+                                ref
+                                    .read(settingViewModelProvider.notifier)
+                                    .logout();
+                              },
+                              label: Text(
+                                'Logout',
+                                style: TextStyle(
+                                    fontSize: isWide ? 20 : 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
                   ),
-                ),
-              const SizedBox(height: 20),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
